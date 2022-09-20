@@ -5,7 +5,9 @@ import 'home_page.dart';
 import 'utils.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, required this.auth});
+
+  final AuthService auth;
 
   @override
   State<LoginPage> createState() => LoginPageState();
@@ -75,7 +77,7 @@ class LoginPageState extends State<LoginPage> {
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
                     setState(() => isLoading = true);
-                    isSignedIn = await AuthService().login(
+                    isSignedIn = await widget.auth.login(
                       emailController.text,
                       passwordController.text,
                     );

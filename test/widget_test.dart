@@ -1,30 +1,66 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_testing/auth_service.dart';
+import 'package:flutter_testing/login_page.dart';
 
-import 'package:flutter_testing/main.dart';
+import 'package:mockito/mockito.dart';
+
+class MockAuth extends Mock implements AuthService {}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  Widget createWidget(Widget child) {
+    return MaterialApp(home: child);
+  }
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  group('Authentication check', () {
+    testWidgets(
+        'Given invalid credentials When user login Then verify credentials',
+        (WidgetTester tester) async {
+      MockAuth mockAuth = MockAuth();
+      when(mockAuth.login('test@gmail.in', 'test1234'))
+          .thenAnswer((invocation) => false);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      await tester.pumpWidget(createWidget(LoginPage(auth: mockAuth)));
+      final StatefulElement element = tester.element(find.byType(LoginPage));
+      final state = element.state as LoginPageState;
+      expect(state.isSignedIn, isFalse);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+      Finder email = find.byKey(const Key('email'));
+      await tester.enterText(email, 'test@gmail.in');
+
+      Finder password = find.byKey(const Key('password'));
+      await tester.enterText(password, 'test1234');
+
+      Finder login = find.byType(ElevatedButton);
+      await tester.tap(login);
+      await tester.pump();
+
+      expect(state.isSignedIn, isFalse);
+    });
+
+    testWidgets(
+        'Given valid credentials When user login Then verify credentials',
+        (WidgetTester tester) async {
+      MockAuth mockAuth = MockAuth();
+      when(mockAuth.login('eve.holt@reqres.in', 'cityslicka'))
+          .thenAnswer((invocation) => true);
+
+      await tester.pumpWidget(createWidget(LoginPage(auth: mockAuth)));
+      final StatefulElement element = tester.element(find.byType(LoginPage));
+      final state = element.state as LoginPageState;
+      expect(state.isSignedIn, isFalse);
+
+      Finder email = find.byKey(const Key('email'));
+      await tester.enterText(email, 'eve.holt@reqres.in');
+
+      Finder password = find.byKey(const Key('password'));
+      await tester.enterText(password, 'cityslicka');
+
+      Finder login = find.byType(ElevatedButton);
+      await tester.tap(login);
+      await tester.pump();
+
+      expect(state.isSignedIn, isTrue);
+    });
   });
 }
